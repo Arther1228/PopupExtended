@@ -47,7 +47,7 @@ define([
             this.actions = options.extended.actions;
             this.scaleSelected = options.extended.scaleSelected;
 
-            this.draggable = options.extended.draggable === true;
+            //this.draggable = options.extended.draggable === false;
             this.defaultWidth = options.extended.defaultWidth;
             this.multiple = options.extended.multiple === true;
             this.hideOnOffClick = options.extended.hideOnOffClick === true;
@@ -76,12 +76,13 @@ define([
             this.events.push(on(this.map, "resize", lang.hitch(this, this._setPopupMode)));
             this.events.push(on(this.map, "pan-end", lang.hitch(this, this._mapPanEnd)));
 
-            //if draggable, wire up mouse events on the map and it's node
+         /*   //if draggable, wire up mouse events on the map and it's node
             if (this.draggable) {
                 this.events.push(on(this.map.root, "mousemove", lang.hitch(this, this._mapMouseMove)));
                 this.events.push(on(this.map.root, "mouseup", lang.hitch(this, this._mapMouseUp)));
             }
 
+		*/
             this._setPopupMode();
             dojo.destroy(this.domNode);
             return this.inherited(arguments);
@@ -133,9 +134,6 @@ define([
 
             this.events.push(on(popup, "show", dojo.partial(this._popupShown, this)));
             this.events.push(on(popup, "hide", dojo.partial(this._popupHidden, this)));
-            this.events.push(on(popup, "selection-change", dojo.partial(this._popupSelectionChange, this)));
-            this.events.push(on(popup, "maximize", dojo.partial(this._popupMaximized, this)));
-            this.events.push(on(popup, "restore", dojo.partial(this._popupRestored, this)));
             this.openPopups.push(popup);
 
             popup.domNode.style.opacity = 0;
@@ -145,29 +143,7 @@ define([
         },
 
 
-        hide: function (feature) {
-            //This method differs from default hide in that you must pass the feature to hide if you're attempting to hide a particular popup
-
-            //if this flag is true hide all open popups
-            if (!feature && this.hideOnOffClick) {
-                for (var i = 0, len = this.openPopups.length; i < len; i++) {
-                    this.openPopups[i].hide();
-                    i--;
-                    len--;
-                }
-                return;
-            }
-
-            //hiding a specific feature
-            if (feature) {
-                var openPopup = this.getPopupForFeature(feature);
-                if (openPopup) {
-                    openPopup.hide();
-                }
-            }
-        },
-
-        resize: function (width, height, feature) {
+	     resize: function (width, height, feature) {
             //If a feature is passed in this method will only resize the popup where this feature is the currently selected.
             //If a feature is not provided it will resize all open popups
 
@@ -181,26 +157,6 @@ define([
             }
         },
 
-        maximize: function (feature) {
-            this._callPopupApiMethodsFromFeature(feature, "maximize", arguments);
-        },
-
-
-        restore: function (feature) {
-            this._callPopupApiMethodsFromFeature(feature, "restore", arguments);
-        },
-
-        select: function (index, feature) {
-            this._callPopupApiMethodsFromFeature(feature, "select", arguments);
-        },
-
-        selectNext: function (feature) {
-            this._callPopupApiMethodsFromFeature(feature, "selectNext", arguments);
-        },
-
-        selectPrevious: function (feature) {
-            this._callPopupApiMethodsFromFeature(feature, "selectPrevious", arguments);
-        },
 
         set: function (name, value, feature) {
             this._callPopupApiMethodsFromFeature(feature, "set", arguments);
@@ -286,18 +242,6 @@ define([
 
         },
 
-
-        _popupSelectionChange: function (self) {
-            //scope: 'self' is the class, 'this' is the child popup refering to the event
-            //console.log('selection change');
-
-            self._addTemplateOptions(this);
-            if (this.isShowing && !this.isSnapped && !this._maximized) {
-                self._resetPopupDragPosition(this); //maintain dragged position if unsnapped and not maximized
-            }
-
-        },
-
         _popupHidden: function (self) {
             //scope: self is the class, this is the child popup that is opened.
             //console.log("hidden");
@@ -321,38 +265,6 @@ define([
             //reset the indexes of all other popups
             for (var i = 0, len = self.openPopups.length; i < len; i++) {
                 self.openPopups[i].index = i;
-            }
-        },
-
-
-        _popupMaximized: function (self) {
-            //console.log('maximized');
-            this.originalZIndex = domStyle.get(this.domNode, "z-index");
-            this.domNode.style.zIndex = 1000;  //make sure the z-index is on top
-
-            if (!this.isSnapped) {
-                dojo.query(".pe-resizer", this.domNode).style("display", "none"); //hide resize node when maxmized
-            }
-
-            //for small style popups display the content pane again
-            if (self.popupMode === "small") {
-                //hide the content pane for small popups
-                dojo.query(".contentPane", this.domNode).style("display", "block");
-
-            }
-        },
-
-        _popupRestored: function (self) {
-            //console.log('restore');
-            this.domNode.style.zIndex = this.originalZIndex;
-            if (!this.isSnapped) {
-                self._resetPopupDragPosition(this);
-                dojo.query(".pe-resizer", this.domNode).style("display", "block"); //display resize node when restored
-            }
-
-            if (self.popupMode === "small") {
-                //hide the content pane for small popups
-                dojo.query(".contentPane", this.domNode).style("display", "none");
             }
         },
 
@@ -398,91 +310,6 @@ define([
 
 
         },
-
-        _addResizer: function (popup) {
-            popup.hasReszier = true;
-            var node = popup.wrapperNode;
-
-            //IE doesn't support resize css property. So manually doing this
-            //By default, just creating a black triangle in the bottom right corner for the resizer UI. 
-            //This can be overriden in a custom theme in css. But need to use !important in the css file to override these defaults.
-            var rn = domConstruct.create("span", {
-                "style": "width: 15px; height: 15px; background-color: #000; position: absolute; right: 0px; bottom: 0px;",
-                "style": "position: absolute;" +
-                         "right: 3px;" +
-                         "bottom: 0px;" +
-                         "z-index: 100;" +
-                         "cursor: nw-resize;" +
-                         "border-left: 10px Solid #000;" +
-                         "border-top: 10px solid transparent;" +
-                         "border-bottom: 10px solid transparent;" +
-                         "transform: rotate(45deg);",
-                "title": "resize popup",
-                "class": "pe-resizer"
-            }, node);
-            rn.style.zIndex = node.style.zIndex + 1;
-            rn.style.cursor = "nw-resize";
-
-            popup.popupEvents.push(on(rn, "mousedown", lang.hitch(this, function (e) {
-                var startWidth = domStyle.get(node, "width");
-                var contentPaneNode = dojo.query(".contentPane", node)[0];
-                var startHeight = domStyle.get(contentPaneNode, "height"); //only changing height of content pane
-                domStyle.set(contentPaneNode, "max-height", ""); //remove any max height setting
-
-                this.map.popupResizing = {
-                    node: node,
-                    startX: e.screenX,
-                    startY: e.screenY,
-                    startWidth: startWidth,
-                    startHeight: startHeight
-                };
-
-                //while resizing make all text unselectable
-                dojo.setSelectable(this.map.root, false);
-            })));
-
-        },
-
-        _mapMouseUp: function (e) {
-            if (this.map.popupDragging) {
-                var pu = this.map.popupDragging.popup;
-                pu.draggedLeft = domStyle.get(pu.domNode, "left");
-                pu.draggedTop = domStyle.get(pu.domNode, "top");
-            }
-
-            //reset to selectable
-            dojo.setSelectable(this.map.root, true);
-            this.map.popupDragging = null;
-            this.map.popupResizing = null;
-        },
-
-        _mapMouseMove: function (e) {
-
-            //check if a popup is being dragged or resized
-            if (this.map.popupDragging) {
-                var pu = this.map.popupDragging.popup;
-
-                //first drag so do some stuff
-                if (pu.isSnapped) {
-                    this._addResizer(pu); //add resizing controls
-                    pu._unfollowMap(); //this gem stops the popup from following the map movements on zoom and pan. Perfect for unsnapped popups.
-                    dojo.query(".outerPointer, .pointer", pu.domNode).style("display", "none"); //hide the pointer
-                    pu.isSnapped = false;
-                }
-
-                var left = (this.map.popupDragging.startLeft + e.screenX - this.map.popupDragging.startX) + 'px';
-                var top = (this.map.popupDragging.startTop + e.screenY - this.map.popupDragging.startY) + 'px';
-                domStyle.set(pu.domNode, "left", left);
-                domStyle.set(pu.domNode, "top", top);
-            }
-            else if (this.map.popupResizing) {
-                var width = (this.map.popupResizing.startWidth + e.screenX - this.map.popupResizing.startX) + 'px';
-                var height = (this.map.popupResizing.startHeight + e.screenY - this.map.popupResizing.startY) + 'px';
-                dojo.query(".sizer", this.map.popupResizing.node).style("width", width);
-                dojo.query(".contentPane", this.map.popupResizing.node).style("height", height);
-            }
-        },
-
 
         _resetPopupDragPosition: function (popup) {
             domStyle.set(popup.domNode, "left", popup.draggedLeft + "px");
@@ -537,47 +364,7 @@ define([
             if (this.popupMode === "small") {
                 dojo.addClass(popup.domNode, "small");
             }
-
-            //destory any pe-actions that may already exist
-            var actionsList = dojo.query(".actionList", popup.domNode)[0];
-            dojo.query(".pe-action", actionsList).forEach(dojo.destroy);
-
-            //get any custom actions
-            var actions = this.actions;
-            if (templateOptions.actions && templateOptions.actions.length > 0) {
-                actions = templateOptions.actions;
-            }
-
-            //check the info template for an actions list section. Doing this on each selction change so individual features can have different actions specified via template.
-            if (actions) {
-
-                //add an 'a' node for each action and assign click handler
-                for (var i = 0, len = actions.length; i < len; i++) {
-                    var action = actions[i];
-
-                    var f = popup.getSelectedFeature();
-                    //check if this action has a condition function applied. Return early if it evaluates to false
-                    if (action.condition) {
-                        if (action.condition(f) !== true) {
-                            return;
-                        }
-                    }
-
-                    var link = domConstruct.create("a", {
-                        "class": "action pe-action " + action.className,
-                        "innerHTML": "<span>" + action.text + "</span>",
-                        "title": action.title,
-                        "href": "javascript:void(0);"
-                    }, actionsList);
-                    link.action = action;
-
-                    popup.popupEvents.push(on(link, "click", dojo.partial(function (popup) {
-                        if (this.action) {
-                            this.action.click(f); //run the click handler passed in the action list if one was assigned.
-                        }
-                    }, popup)));
-                }
-            }
+     
         },
 
         _featureArraysMatch: function (a, b) {
@@ -604,7 +391,6 @@ define([
             return true;
 
         },
-
 
         _scaleFeatureUp: function (feature) {
             if (!feature) {
