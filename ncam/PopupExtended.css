@@ -28,6 +28,9 @@
   color:#E6E2AF;
 }
 
+.myInfoWindow .title{
+	display: none;
+}
 
 .myInfoWindow .actionList {
  display: none;
@@ -37,19 +40,15 @@
  display: none;
 }
 
-.esriViewPopup .break {
-    display: none;
-}
-.esriViewPopup .hzLine {
-	display: none;
-}
-
-
-.myInfoWindow .title{
-	display: none;
-}
-
 .esriViewPopup .header {
     font-weight: bold;
 	width : auto;
+}
+
+.esriViewPopup .break {
+    display: none;
+}
+
+.esriViewPopup .hzLine {
+	display: none;
 }

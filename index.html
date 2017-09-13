@@ -72,11 +72,7 @@
                     //add world cities feature layer from arcgis online. Create a popup template for it. No extended object on this template so it will 
                     //use the actions, theme and scaleSelected properties defined in the constructor of PopupExtended if they are defined.
                     var flTemplate = new PopupTemplate({
-                        title: "{CITY_NAME}",
-                        fieldInfos: [
-                            { fieldName: "CNTRY_NAME", label: "Country", visible: true },
-                            { fieldName: "POP_CLASS", label: "Population Class", visible: true },
-                        ]
+                        title: "{CITY_NAME}"
                     });
 
                     var flUrl = "http://sampleserver6.arcgisonline.com/arcgis/rest/services/WorldTimeZones/MapServer/0";
@@ -92,7 +88,6 @@
                     //The exteneded object contains the custom properties applicable only to PopupExtended. Any other normal popup properties can be defined as per normal (not included in the extended object though).
                     var extendedPopup = new PopupExtended({
                         extended: {
-                            defaultWidth: 250,
                             hideOnOffClick: false,
                             multiple: true,
                             smallStyleWidthBreak: 768,
