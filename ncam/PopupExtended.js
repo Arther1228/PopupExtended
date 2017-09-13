@@ -337,14 +337,8 @@ define([
             //set the template proeprties of the popup. Options set in a template object take precedence over options set on the PopupExtended.
 
             //reset the class back to nothing then add theme classes.
-            popup.domNode.className = "esriPopup esriPopupVisible";
-            if (templateOptions.themeClass) {
-                dojo.addClass(popup.domNode, templateOptions.themeClass);
-            }
-            else if (this.themeClass) {
-                dojo.addClass(popup.domNode, this.themeClass);
-            }
-
+            popup.domNode.className = "myInfoWindow";
+           
             //scale down the previous feature if one was selected
             if (popup.currentIndex !== undefined && popup.features.length > popup.currentIndex) {
                 var prevFeature = popup.features[popup.currentIndex];
