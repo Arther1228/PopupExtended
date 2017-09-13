@@ -6,7 +6,6 @@ define([
   "dojo/dom-style",
   "dojox/gfx/fx",
   "dojo/on",
-
   "esri/dijit/PopupTemplate",
   "esri/dijit/Popup"
 ], function (
@@ -162,16 +161,6 @@ define([
             this._callPopupApiMethodsFromFeature(feature, "set", arguments);
         },
 
-        setContent: function (content, feature) {
-            //to explicity call this, must pass in a feature, even if only one popup is open
-            if (feature) {
-                this._callPopupApiMethodsFromFeature(feature, "setContent", arguments);
-            }
-            else {
-                this.inherited(arguments);
-            }
-        },
-
         setTitle: function (title, feature) {
             //to explicity call this, must pass in a feature, even if only one popup is open
             if (feature) {
@@ -228,9 +217,7 @@ define([
             }
 
             this.isSnapped = true; //set is Snapped to true as it hasn't been dragged yet or is not draggable
-            if (self.draggable) {
-                self._makeDraggable(this);
-            }
+
 
             if (self.popupMode === "small") {
                 //hide the content pane, make it have no height and reposition for small popups
@@ -267,55 +254,6 @@ define([
                 self.openPopups[i].index = i;
             }
         },
-
-        //#endregion
-
-        //#region draggable / resizable stuff
-
-        _makeDraggable: function (popup) {
-            var titlePane = dojo.query(".titlePane", popup.domNode);
-            titlePane.style("cursor", "move");
-
-            popup.popupEvents.push(on(titlePane[0], "mousedown", lang.hitch(this, function (e) {
-
-                //if maximized or this is a titleButton click don't do anything
-                if (popup._maximized || e.target.className.indexOf("titleButton") !== -1) {
-                    return;
-                }
-
-                var startLeft = domStyle.get(popup.domNode, "left");
-                var startTop = domStyle.get(popup.domNode, "top");
-                this.map.popupDragging = {
-                    popup: popup,
-                    startLeft: startLeft,
-                    startTop: startTop,
-                    startX: e.screenX,
-                    startY: e.screenY
-                };
-
-                //if the popupwrapper has a bottom setting instead of top, convert bottom to equivalent top for correct resizing
-                var bottom = domStyle.get(popup.wrapperNode, "bottom");
-                if (bottom && bottom.toString().indexOf("px") !== null) {
-                    bottom = parseInt(bottom.replace("px", ""));
-                }
-                if (bottom && bottom !== 0) {
-                    domStyle.set(popup.wrapperNode, "bottom", ""); //remove bottom
-                    var wrapperHeight = domStyle.get(popup.wrapperNode, "height"); //get height of wrapper
-                    domStyle.set(popup.wrapperNode, "top", ((wrapperHeight * -1) - bottom).toString() + "px"); //set top to negative of wrapper height minus the bottom value
-                }
-
-                //while dragging make all text unselectable
-                dojo.setSelectable(this.map.root, false);
-            })));
-
-
-        },
-
-        _resetPopupDragPosition: function (popup) {
-            domStyle.set(popup.domNode, "left", popup.draggedLeft + "px");
-            domStyle.set(popup.domNode, "top", popup.draggedTop + "px");
-        },
-
 
         //#endregion
 
