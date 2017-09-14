@@ -160,7 +160,11 @@ define([
         set: function (name, value, feature) {
             this._callPopupApiMethodsFromFeature(feature, "set", arguments);
         },
-
+/*
+		destroy: function (feature) {
+            this._callPopupApiMethodsFromFeature(feature, "destroy", arguments);
+        },
+*/
         setTitle: function (title, feature) {
             //to explicity call this, must pass in a feature, even if only one popup is open
             if (feature) {

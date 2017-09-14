@@ -7,9 +7,13 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
 
-    <title>ArcGIS jsapi Advanced Popup Example</title>
-    <link rel="stylesheet" href="http://js.arcgis.com/3.13/esri/css/esri.css">
-    <link rel="stylesheet" href="http://js.arcgis.com/3.13/dijit/themes/claro/claro.css">
+    <title>ArcGIS multi simple poup</title>
+
+	<link rel="stylesheet" type="text/css" href="http://192.168.97.25:8080/arcgis_js_api/library/3.12/3.12/dijit/themes/tundra/tundra.css"/>
+	<link rel="stylesheet" type="text/css" href="http://192.168.97.25:8080/arcgis_js_api/library/3.12/3.12/esri/css/esri.css" />
+	<link rel="stylesheet" type="text/css" href="http://192.168.97.25:8080/arcgis_js_api/library/3.12/3.12/dijit/themes/claro/claro.css" />
+
+
     <link href="ncam/PopupExtended.css" rel="stylesheet" />  
 
     <style>
@@ -44,74 +48,166 @@
         };
     </script>
 
-    <script src="http://js.arcgis.com/3.13/"></script>
+	<script type="text/javascript" src="http://192.168.97.25:8080/arcgis_js_api/library/3.12/3.12/init.js"></script>
 
     <script type="text/javascript">
 
-        var map;
-        var graphics;
+var map;
+var graphics;
+
+var featureLayer;
+
+var extendedPopup;
+
+var mapInfowindowEver = null;
+
+require(["dojo/_base/lang", "dojo/dom", "dojo/dom-construct", "esri/map", "esri/layers/graphics", "esri/layers/FeatureLayer", "esri/graphic", "esri/geometry/Point", "esri/InfoTemplate", "esri/dijit/PopupTemplate",
+         "esri/symbols/SimpleMarkerSymbol", "esri/symbols/SimpleLineSymbol", "esri/dijit/Popup", "esri/dijit/PopupMobile", "ncam/PopupExtended", "dojo/ready","esri/SpatialReference","esri/symbols/SimpleFillSymbol","esri/symbols/SimpleLineSymbol","esri/Color", "dojo/_base/Color"],
+         function (lang, dom, domConstruct, Map, GraphicsLayer, FeatureLayer, Graphic, Point, InfoTemplate, PopupTemplate, SimpleMarkerSymbol, SimpleLineSymbol, Popup, PopupMobile, PopupExtended, ready,SpatialReference,SimpleFillSymbol,SimpleLineSymbol) {
+
+	ready(function () {
+
+		map = new esri.Map("map", {
+			//extent: initExtent,
+			sliderStyle: "small"
+		});
+
+		var extGraphics = new esri.geometry.Extent(117.0552123329997, 31.62440781313796, 117.4752123329997, 32.06440781313796, new esri.SpatialReference({ wkid: 4326 }));
+		map.setExtent(extGraphics);
+
+		//Add the topographic layer to the map. View the ArcGIS Online site for services http://arcgisonline/home/search.html?t=content&f=typekeywords:service
+		var basemap = new esri.layers.ArcGISTiledMapServiceLayer("http://192.168.97.25:6080/arcgis/rest/services/PGISTiled/MapServer");
+		map.addLayer(basemap);
+
+		featureLayer = new esri.layers.FeatureLayer("http://192.168.97.25:6080/arcgis/rest/services/POI/MapServer/8", {
+			mode: esri.layers.FeatureLayer.MODE_ONDEMAND,
+			visible: false
+		});
+
+		map.addLayer(featureLayer);
+
+		extendedPopup = new PopupExtended({
+			extended: {
+				hideOnOffClick: false,
+				multiple: true,
+				smallStyleWidthBreak: 768,
+			},
+			highlight: false,
+			//titleInBody: false,
+		}, dojo.create("div"));
+
+		//set the map to use the exteneded popup
+		extendedPopup.setMap(map); 
+		//保存之前的infowindow
+		mapInfowindowEver = map.infowindow; 
+		//更新infowindow
+		map.infoWindow = extendedPopup;
+		//------------------------------------------
+		getFeatures();
+
+	});
+
+});
+
+	// get the features within the current extent from the feature layer
+	function getFeatures() {
+		try{
+
+			var data = [];
+			var symbol = new esri.symbol.SimpleMarkerSymbol()
+			.setColor(new dojo.Color("#FF0000"))
+			.setSize(12)
+			.setStyle(esri.symbol.SimpleMarkerSymbol.STYLE_DIAMOND);
+
+			var flTemplate = new esri.dijit.PopupTemplate({
+				title: "{ID}" + "_123"
+			});
+
+			var query = new esri.tasks.Query();
+			query.geometry = map.extent;
+			query.where = "MC like '%淮河路步行街%'";
+			wgs = new esri.SpatialReference({
+				"wkid": 4326
+			});
+			query.outSpatialReference = wgs;
+			featureLayer.queryFeatures(query, function (featureSet) {
+
+				if (featureSet && featureSet.features && featureSet.features.length > 0) {
+					data = featureSet.features;
+				}
+				console.log("data.length: " + data.length);
+
+				if(data.length > 0){
+
+					for(var i = 0; i < data.length; i++){
+						var c = data[i].attributes;
+						var objPoint = new esri.geometry.Point();
+						objPoint.x = (data[i].geometry.x * 1.0);
+						objPoint.y = (data[i].geometry.y * 1.0);  
+						var graphic = new esri.Graphic(objPoint);
+
+						graphic.setAttributes({
+							"ID" : c.ID
+						});
+
+						graphic.setSymbol(symbol);
+						graphic.setInfoTemplate(flTemplate)
+						graphic.show();
+						map.graphics.add(graphic);
+					}
+				}
+			});
+
+			map.setLevel(14);
+
+		}catch(e){
+			alert(e.message);
+		}
+
+	}
 
 
-        require(["dojo/_base/lang", "dojo/dom", "dojo/dom-construct", "esri/map", "esri/layers/graphics", "esri/layers/FeatureLayer", "esri/graphic", "esri/geometry/Point", "esri/InfoTemplate", "esri/dijit/PopupTemplate",
-               "esri/symbols/SimpleMarkerSymbol", "esri/symbols/SimpleLineSymbol", "esri/dijit/Popup", "esri/dijit/PopupMobile", "ncam/PopupExtended", "dojo/ready"],
-        function (lang, dom, domConstruct, Map, GraphicsLayer, FeatureLayer, Graphic, Point, InfoTemplate, PopupTemplate, SimpleMarkerSymbol, SimpleLineSymbol, Popup, PopupMobile, PopupExtended, ready) {
+	function testApiMethods() {
+		//覆盖infowindow
+		map.infoWindow = extendedPopup;
 
-            ready(function () {
+		for(var i = 0; i < map.graphics.graphics.length; i++){
+				var d = map.graphics.graphics[i]; 
+				var loc = map.toScreen(d.geometry);
+				map.infoWindow.setFeatures([d]);
+				map.infoWindow.show(loc);
+			}	    
+    }
 
+	function hiddenTitle(){
+		
+		//还原infowindow
+		map.infoWindow = mapInfowindowEver;		
+		console.log("extendedPopup.openPopups.length: " + extendedPopup.openPopups.length);
 
-                map = new Map("map", {
-                    center: [133, -25],
-                    zoom: 4,
-                    basemap: "gray",
-                    minZoom: 3
-                });
+		var popup_count = extendedPopup.openPopups.length;
+		var popup_list = [];
+		popup_list = extendedPopup.openPopups;
 
+		//销毁所有的infowindow		
+		for(var i = 0; i < extendedPopup.openPopups.length; i++){
+			extendedPopup.openPopups[i].hide();			
+			console.log("hide i： " + i + " 的 infowindow.");
+			i--;
+		}		
 
-                map.on("load", function () {
+		extendedPopup.unsetMap(map); 
+		extendedPopup.openPopups = [];
 
-                    //add world cities feature layer from arcgis online. Create a popup template for it. No extended object on this template so it will 
-                    //use the actions, theme and scaleSelected properties defined in the constructor of PopupExtended if they are defined.
-                    var flTemplate = new PopupTemplate({
-                        title: "{CITY_NAME}"
-                    });
-
-                    var flUrl = "http://sampleserver6.arcgisonline.com/arcgis/rest/services/WorldTimeZones/MapServer/0";
-                    var fl = new FeatureLayer(flUrl, {
-                        id: "world-cities",
-                        infoTemplate: flTemplate,
-                        outFields: "*"
-                    });
-                    map.addLayer(fl);
-
-
-                    //Create an extended Popup.
-                    //The exteneded object contains the custom properties applicable only to PopupExtended. Any other normal popup properties can be defined as per normal (not included in the extended object though).
-                    var extendedPopup = new PopupExtended({
-                        extended: {
-                            hideOnOffClick: false,
-                            multiple: true,
-                            smallStyleWidthBreak: 768,
-                        },
-                        highlight: false,
-                        //titleInBody: false,
-                    }, dojo.create("div"));
-                    
-                    //set the map to use the exteneded popup
-                    extendedPopup.setMap(map); 
-
-                    map.infoWindow = extendedPopup;
-
-                });
-            });
-        });
-
+	}
 
     </script>
 
 
 </head>
 <body>
-
+	<input type="button" value="显示标题" onclick="testApiMethods()">
+	<input type="button" value="隐藏标题" onclick="hiddenTitle()">
     <div id="map">
 
 
